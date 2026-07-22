@@ -17,7 +17,11 @@ export default defineNuxtConfig({
     preset: 'bun',
     esbuild: {
       options: {
-        drop: process.env.NODE_ENV === 'production' ? ['console'] : [],
+        // Drop noisy logs in production, but keep warn/error for ops debugging
+        pure:
+          process.env.NODE_ENV === 'production'
+            ? ['console.log', 'console.debug']
+            : [],
       },
     },
   },
