@@ -1,0 +1,69 @@
+{
+  "brand": "What2Eat",
+  "tagline": "Hungry but undecided? Tell us where you are and what you crave.",
+  "nav": {
+    "language": "Language",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "form": {
+    "locationLabel": "Location",
+    "locationPlaceholder": "City or neighborhood",
+    "useMyLocation": "Use my location",
+    "locating": "Finding you…",
+    "geoDenied": "Location access was denied. Enter a place manually.",
+    "geoUnavailable": "Could not get your location. Try typing it instead.",
+    "cuisineLabel": "Cuisine",
+    "priceLabel": "Price range",
+    "findPlaces": "Find Places",
+    "feedMe": "Feed Me",
+    "feedMeHint": "Random highly rated picks for your area",
+    "locationRequired": "Please enter a location first.",
+    "locationSuggestions": "Location suggestions",
+    "locationNoResults": "No matching places found",
+    "locationSearching": "Searching places…",
+    "editSearch": "Edit",
+    "collapseSearch": "Minimize",
+    "searchingShort": "Searching",
+    "cancelSearch": "Cancel"
+  },
+  "cuisines": {
+    "japanese": "Japanese",
+    "chinese": "Chinese",
+    "italian": "Italian",
+    "street-food": "Street Food",
+    "burgers": "Burgers",
+    "thai": "Thai",
+    "mexican": "Mexican",
+    "korean": "Korean",
+    "cafe": "Cafe",
+    "seafood": "Seafood"
+  },
+  "price": {
+    "budget": "Budget",
+    "mid-range": "Mid-range",
+    "high-end": "High-end"
+  },
+  "results": {
+    "title": "Suggestions for you",
+    "searching": "Searching",
+    "processLabel": "Thinking",
+    "processExpand": "Show full thinking",
+    "processCollapse": "Hide full thinking",
+    "error": "Something went wrong. Please try again.",
+    "suggestedDish": "Try",
+    "hours": "Hours",
+    "openStatus": {
+      "open": "Open now",
+      "closed": "Closed",
+      "unknown": "Hours unknown"
+    },
+    "googleMaps": "Google Maps",
+    "openRice": "OpenRice",
+    "website": "Website",
+    "share": "Share",
+    "copied": "Copied to clipboard",
+    "shareTitle": "What2Eat recommendation",
+    "shareText": "{name} — try the {dish} ({cuisine}, {price}). {url}"
+  }
+}

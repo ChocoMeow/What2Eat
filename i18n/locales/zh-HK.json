@@ -1,0 +1,69 @@
+{
+  "brand": "食咩好",
+  "tagline": "肚餓又唔知食咩？話我知你喺邊、想食咩風味。",
+  "nav": {
+    "language": "語言",
+    "light": "淺色",
+    "dark": "深色"
+  },
+  "form": {
+    "locationLabel": "地點",
+    "locationPlaceholder": "城市或社區",
+    "useMyLocation": "使用我的位置",
+    "locating": "定位中…",
+    "geoDenied": "未能取得位置權限，請手動輸入地點。",
+    "geoUnavailable": "無法取得位置，請改為手動輸入。",
+    "cuisineLabel": "菜式",
+    "priceLabel": "價錢範圍",
+    "findPlaces": "搵食店",
+    "feedMe": "隨便食",
+    "feedMeHint": "只根據地點隨機推薦高評分選擇",
+    "locationRequired": "請先輸入地點。",
+    "locationSuggestions": "地點建議",
+    "locationNoResults": "搵唔到相符地點",
+    "locationSearching": "搜尋地點中…",
+    "editSearch": "修改",
+    "collapseSearch": "收起",
+    "searchingShort": "搜尋中",
+    "cancelSearch": "取消"
+  },
+  "cuisines": {
+    "japanese": "日本菜",
+    "chinese": "中菜",
+    "italian": "意大利菜",
+    "street-food": "街頭小食",
+    "burgers": "漢堡",
+    "thai": "泰菜",
+    "mexican": "墨西哥菜",
+    "korean": "韓國菜",
+    "cafe": "咖啡廳",
+    "seafood": "海鮮"
+  },
+  "price": {
+    "budget": "平價",
+    "mid-range": "中價",
+    "high-end": "高檔"
+  },
+  "results": {
+    "title": "為你精選",
+    "searching": "搜尋中",
+    "processLabel": "思考中",
+    "processExpand": "展開完整思考",
+    "processCollapse": "收起完整思考",
+    "error": "出咗啲問題，請再試一次。",
+    "suggestedDish": "推介",
+    "hours": "營業時間",
+    "openStatus": {
+      "open": "營業中",
+      "closed": "休息中",
+      "unknown": "營業狀況不詳"
+    },
+    "googleMaps": "Google 地圖",
+    "openRice": "OpenRice",
+    "website": "網站",
+    "share": "分享",
+    "copied": "已複製到剪貼簿",
+    "shareTitle": "What2Eat 推薦",
+    "shareText": "{name} — 試吓 {dish}（{cuisine}，{price}）。{url}"
+  }
+}
