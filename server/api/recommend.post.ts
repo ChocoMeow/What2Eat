@@ -9,12 +9,16 @@ import {
   createRecommendationSchema,
   recommendRequestSchema,
 } from '../../shared/schemas/recommendation'
+import { getOpenAiProxyUrl, withProxyFetch } from '../utils/proxyFetch'
 
-function withOpenRouterWebSearch(enable: boolean): typeof fetch | undefined {
-  if (!enable) return undefined
+function withOpenRouterWebSearch(
+  enable: boolean,
+  baseFetch: typeof fetch = globalThis.fetch,
+): typeof fetch {
+  if (!enable) return baseFetch
   return (async (input, init) => {
     if (!init?.body || typeof init.body !== 'string') {
-      return globalThis.fetch(input, init)
+      return baseFetch(input, init)
     }
     try {
       const body = JSON.parse(init.body) as Record<string, unknown>
@@ -27,9 +31,9 @@ function withOpenRouterWebSearch(enable: boolean): typeof fetch | undefined {
             'Find dine-in restaurants near the user. Prioritize Google Maps (ratings, hours, photos, place URL), OpenRice (cover images), TripAdvisor, Yelp, Time Out, and official sites.',
         },
       ]
-      return globalThis.fetch(input, { ...init, body: JSON.stringify(body) })
+      return baseFetch(input, { ...init, body: JSON.stringify(body) })
     } catch {
-      return globalThis.fetch(input, init)
+      return baseFetch(input, init)
     }
   }) as typeof fetch
 }
@@ -96,11 +100,13 @@ export default defineEventHandler(async (event) => {
 
   const { location, cuisines, priceTier, mode, locale } = parsed.data
   const openrouter = /openrouter\.ai/i.test(baseURL)
+  const proxyUrl = getOpenAiProxyUrl()
+  const aiFetch = withOpenRouterWebSearch(openrouter, withProxyFetch())
 
   const openai = createOpenAI({
     apiKey,
     baseURL,
-    fetch: withOpenRouterWebSearch(openrouter),
+    fetch: aiFetch,
   })
 
   const { system, prompt } = buildRecommendPrompts({
@@ -114,6 +120,7 @@ export default defineEventHandler(async (event) => {
   console.log('[what2eat:ai] request', {
     model,
     baseURL,
+    proxy: proxyUrl ? '(configured)' : false,
     webSearch: openrouter,
     body: parsed.data,
     system,

@@ -32,6 +32,14 @@ OPENAI_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_MODEL=openai/gpt-4o-mini
 ```
 
+If your region blocks direct access to the AI provider, route only AI requests through a proxy:
+
+```env
+OPENAI_PROXY_URL=http://127.0.0.1:8080
+```
+
+Use an `http://` or `https://` proxy URL. Credentials are supported in the URL (`http://user:pass@host:port`). Only the recommend API uses this setting — location autocomplete and image proxy are unaffected.
+
 ### Provider examples
 
 | Provider   | `OPENAI_BASE_URL`                         | Example model        |
@@ -96,6 +104,7 @@ docker run --rm -p 3000:3000 \
   -e OPENAI_API_KEY \
   -e OPENAI_BASE_URL \
   -e OPENAI_MODEL \
+  -e OPENAI_PROXY_URL \
   what2eat
 ```
 
