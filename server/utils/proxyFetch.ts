@@ -1,32 +1,33 @@
 import { ProxyAgent, fetch as undiciFetch } from 'undici'
 
-type BunFetchInit = RequestInit & {
-  proxy?: string
-}
-
 /** Proxy URL for OpenAI-compatible API calls (e.g. regions that block direct access). */
 export function getOpenAiProxyUrl(): string | undefined {
   const url = process.env.OPENAI_PROXY_URL?.trim()
   return url || undefined
 }
 
+let proxyAgent: ProxyAgent | undefined
+
+function getProxyAgent(proxyUrl: string): ProxyAgent {
+  if (!proxyAgent) proxyAgent = new ProxyAgent(proxyUrl)
+  return proxyAgent
+}
+
 /** Wrap fetch so outbound requests use {@link getOpenAiProxyUrl} when set. */
-export function withProxyFetch(baseFetch: typeof fetch = globalThis.fetch): typeof fetch {
+export function withProxyFetch(): typeof fetch {
   const proxyUrl = getOpenAiProxyUrl()
-  if (!proxyUrl) return baseFetch
+  if (!proxyUrl) return globalThis.fetch
 
-  // Bun supports per-request proxy; Node ignores it, so use undici there.
-  if (typeof Bun !== 'undefined') {
-    return (async (input, init) => {
-      return baseFetch(input, { ...init, proxy: proxyUrl } as BunFetchInit)
-    }) as typeof fetch
-  }
-
-  const agent = new ProxyAgent(proxyUrl)
+  const agent = getProxyAgent(proxyUrl)
   return (async (input, init) => {
-    return undiciFetch(
-      input as Parameters<typeof undiciFetch>[0],
-      { ...init, dispatcher: agent } as Parameters<typeof undiciFetch>[1],
-    ) as unknown as Response
+    try {
+      return (await undiciFetch(
+        input as Parameters<typeof undiciFetch>[0],
+        { ...init, dispatcher: agent } as Parameters<typeof undiciFetch>[1],
+      )) as unknown as Response
+    } catch (error) {
+      console.error('[what2eat:proxy] fetch failed', { proxyUrl, error })
+      throw error
+    }
   }) as typeof fetch
 }

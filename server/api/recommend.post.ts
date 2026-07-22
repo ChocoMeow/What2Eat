@@ -141,7 +141,11 @@ export default defineEventHandler(async (event) => {
     },
     onError: ({ error }) => {
       streamError = error instanceof Error ? error : new Error(String(error))
-      console.error('[what2eat:ai] error', streamError)
+      const details =
+        error && typeof error === 'object' && 'responseBody' in error
+          ? (error as { responseBody?: string }).responseBody
+          : undefined
+      console.error('[what2eat:ai] error', streamError, details ? { responseBody: details } : '')
     },
   })
 
