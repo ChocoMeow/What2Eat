@@ -47,10 +47,17 @@
   "results": {
     "title": "為你精選",
     "searching": "搜尋中",
-    "processLabel": "思考中",
-    "processExpand": "展開完整思考",
-    "processCollapse": "收起完整思考",
+    "reasoningLabel": "推理過程",
+    "processExpand": "展開完整推理",
+    "processCollapse": "收起完整推理",
     "error": "出咗啲問題，請再試一次。",
+    "providerError": "AI 服務暫時無法使用，請稍後再試。",
+    "stats": {
+      "durationSec": "{sec} 秒",
+      "tokens": "{total} tokens",
+      "tokenSplit": "{input} 輸入 · {output} 輸出",
+      "reasoningTokens": "{count} 推理 tokens"
+    },
     "suggestedDish": "推介",
     "hours": "營業時間",
     "openStatus": {

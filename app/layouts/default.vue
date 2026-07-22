@@ -18,9 +18,25 @@ const isSearching = useState('w2e-searching', () => false)
       aria-hidden="true"
     />
     <header class="relative z-20 shrink-0">
-      <div class="mx-auto flex max-w-5xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
-        <LocaleSwitcher />
-        <ThemeToggle />
+      <div class="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
+        <NuxtLink
+          to="/"
+          class="flex items-center gap-2 rounded-lg outline-offset-4 transition-opacity hover:opacity-80"
+          :aria-label="$t('brand')"
+        >
+          <img
+            src="/icons/icon_144x144.webp"
+            alt=""
+            class="size-8 rounded-lg sm:size-9"
+            width="36"
+            height="36"
+            decoding="async"
+          >
+        </NuxtLink>
+        <div class="flex items-center gap-2">
+          <LocaleSwitcher />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
 

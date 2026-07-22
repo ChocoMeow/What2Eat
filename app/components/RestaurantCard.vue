@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import type { OpenStatus, PriceTier, RecommendationItem } from '~~/shared/schemas/recommendation'
-import { foodImageUrl, isHttpUrl } from '~/utils/restaurantLinks'
+import { buildRestaurantLinks, proxiedImageUrl } from '~~/shared/url'
 import { shareRestaurant } from '~/utils/shareRestaurant'
 
 const props = defineProps<{
   item: Partial<RecommendationItem>
   location: string
-  index?: number
+  settled?: boolean
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const toast = ref('')
+const imageLoaded = ref(false)
 const imageFailed = ref(false)
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -27,7 +28,7 @@ const priceLabel = computed(() => {
 
 const status = computed(() => {
   const s = props.item.openStatus
-  return s === 'open' || s === 'closed' || s === 'unknown' ? (s as OpenStatus) : null
+  return s === 'open' || s === 'closed' ? (s as OpenStatus) : null
 })
 
 const rating = computed(() => {
@@ -38,21 +39,36 @@ const rating = computed(() => {
 
 const stars = computed(() => (rating.value == null ? 0 : Math.round(rating.value)))
 
-const imageSrc = computed(() =>
-  foodImageUrl(
-    props.item.imagePrompt || `${dish.value} ${cuisine.value} food`,
-    `${name.value}-${dish.value}`,
-  ),
-)
+const imageSrc = computed(() => {
+  if (!props.settled || imageFailed.value) return null
+  return proxiedImageUrl(props.item.imageUrl)
+})
+
+const hasImage = computed(() => !!imageSrc.value)
 
 const links = computed(() =>
-  (
-    [
-      { href: props.item.mapsUrl, label: t('results.googleMaps') },
-      { href: props.item.openRiceUrl, label: t('results.openRice') },
-      { href: props.item.websiteUrl, label: t('results.website') },
-    ] as const
-  ).filter((l) => isHttpUrl(l.href)),
+  buildRestaurantLinks(props.item, name.value, props.location, String(locale.value || ''), {
+    maps: t('results.googleMaps'),
+    openRice: t('results.openRice'),
+    website: t('results.website'),
+  }),
+)
+
+function onImageError() {
+  imageLoaded.value = false
+  imageFailed.value = true
+}
+
+function onImageLoad() {
+  imageLoaded.value = true
+}
+
+watch(
+  () => [props.settled, props.item.imageUrl] as const,
+  () => {
+    imageLoaded.value = false
+    imageFailed.value = false
+  },
 )
 
 async function onShare() {
@@ -79,16 +95,12 @@ async function onShare() {
   }
 }
 
-watch(name, () => {
-  imageFailed.value = false
-})
 onBeforeUnmount(() => clearTimeout(toastTimer))
 </script>
 
 <template>
   <article
-    class="relative flex h-full gap-4 overflow-hidden rounded-2xl border border-line bg-surface p-4 sm:gap-5 sm:p-5"
-    :style="{ transitionDelay: `${(index ?? 0) * 40}ms` }"
+    class="restaurant-card relative flex h-full gap-4 overflow-hidden rounded-2xl border border-line bg-surface p-4 sm:gap-5 sm:p-5"
   >
     <div class="flex min-w-0 flex-1 flex-col">
       <div class="mb-2">
@@ -132,7 +144,6 @@ onBeforeUnmount(() => clearTimeout(toastTimer))
             :class="{
               'bg-teal/15 text-teal': status === 'open',
               'bg-saffron/15 text-saffron': status === 'closed',
-              'bg-canvas text-muted': status === 'unknown',
             }"
           >
             {{ $t(`results.openStatus.${status}`) }}
@@ -169,14 +180,11 @@ onBeforeUnmount(() => clearTimeout(toastTimer))
       </p>
 
       <div class="mt-auto space-y-2 border-t border-line pt-3">
-        <div
-          v-if="links.length"
-          class="flex flex-wrap gap-x-4 gap-y-2 text-sm"
-        >
+        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
           <a
             v-for="link in links"
             :key="link.label"
-            :href="link.href!"
+            :href="link.href"
             target="_blank"
             rel="noopener noreferrer"
             class="font-medium text-teal underline-offset-4 hover:underline"
@@ -195,19 +203,28 @@ onBeforeUnmount(() => clearTimeout(toastTimer))
     </div>
 
     <div class="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-canvas sm:h-32 sm:w-36">
+      <div
+        v-if="hasImage && !imageLoaded"
+        class="absolute inset-0 animate-pulse bg-gradient-to-br from-teal/10 to-saffron/10"
+        aria-hidden="true"
+      />
       <img
-        v-if="!imageFailed"
-        :src="imageSrc"
-        :alt="dish || name"
-        class="size-full object-cover"
-        loading="lazy"
-        @error="imageFailed = true"
+        v-if="hasImage"
+        :src="imageSrc!"
+        :alt="name"
+        class="relative size-full object-cover transition-opacity duration-300"
+        :class="imageLoaded ? 'opacity-100' : 'opacity-0'"
+        decoding="async"
+        @load="onImageLoad"
+        @error="onImageError"
       >
       <div
         v-else
-        class="flex size-full items-center justify-center bg-gradient-to-br from-teal/20 to-saffron/20 p-2 text-center text-xs text-muted"
+        class="flex size-full flex-col items-center justify-center bg-gradient-to-br from-teal/20 to-saffron/20 p-2 text-center text-xs text-muted"
       >
-        {{ cuisine }}
+        <span v-if="dish" class="line-clamp-3 font-medium text-ink">{{ dish }}</span>
+        <span v-else-if="cuisine">{{ cuisine }}</span>
+        <span v-else>{{ name }}</span>
       </div>
     </div>
 

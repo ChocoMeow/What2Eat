@@ -13,10 +13,13 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/i18n', '@nuxtjs/color-mode'],
 
-  runtimeConfig: {
-    openaiApiKey: process.env.OPENAI_API_KEY || '',
-    openaiBaseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
-    openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  nitro: {
+    preset: 'bun',
+    esbuild: {
+      options: {
+        drop: process.env.NODE_ENV === 'production' ? ['console'] : [],
+      },
+    },
   },
 
   app: {
@@ -34,6 +37,8 @@ export default defineNuxtConfig({
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap',
         },
+        { rel: 'icon', type: 'image/webp', href: '/icons/icon_144x144.webp' },
+        { rel: 'apple-touch-icon', href: '/icons/icon_144x144.webp' },
       ],
       meta: [
         {
@@ -52,11 +57,7 @@ export default defineNuxtConfig({
     defaultLocale: 'zh-HK',
     langDir: 'locales',
     strategy: 'no_prefix',
-    detectBrowserLanguage: {
-      useCookie: true,
-      cookieKey: 'what2eat_locale',
-      fallbackLocale: 'zh-HK',
-    },
+    detectBrowserLanguage: false,
   },
 
   colorMode: {

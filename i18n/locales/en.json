@@ -47,10 +47,17 @@
   "results": {
     "title": "Suggestions for you",
     "searching": "Searching",
-    "processLabel": "Thinking",
-    "processExpand": "Show full thinking",
-    "processCollapse": "Hide full thinking",
+    "reasoningLabel": "Reasoning",
+    "processExpand": "Show full reasoning",
+    "processCollapse": "Hide full reasoning",
     "error": "Something went wrong. Please try again.",
+    "providerError": "The AI service is unavailable right now. Please try again later.",
+    "stats": {
+      "durationSec": "{sec}s",
+      "tokens": "{total} tokens",
+      "tokenSplit": "{input} in · {output} out",
+      "reasoningTokens": "{count} reasoning tokens"
+    },
     "suggestedDish": "Try",
     "hours": "Hours",
     "openStatus": {

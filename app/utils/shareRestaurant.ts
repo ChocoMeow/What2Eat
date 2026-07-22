@@ -1,4 +1,4 @@
-import { googleMapsSearchUrl, isHttpUrl } from './restaurantLinks'
+import { googleMapsSearchUrl, isHttpUrl } from '~~/shared/url'
 
 export async function shareRestaurant(input: {
   name: string

@@ -1,0 +1,32 @@
+# Dependencies & build artifacts
+node_modules
+.output
+.nuxt
+.nitro
+.cache
+.data
+dist
+
+# Git / IDE / local
+.git
+.github
+.vscode
+.idea
+.DS_Store
+*.log
+
+# Env & secrets (inject at runtime)
+.env
+.env.*
+!.env.example
+
+# Docs / misc not needed in image
+README.md
+LICENSE
+*.md
+.gitattributes
+
+# Tests / local tooling
+coverage
+**/*.test.ts
+**/*.spec.ts

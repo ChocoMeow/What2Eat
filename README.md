@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/icons/icon_144x144.webp" alt="What2Eat logo" width="144" height="144" />
+</p>
+
 # What2Eat
 
 AI-powered food recommendations for your location. Built with Nuxt 4, Vue 3, Tailwind CSS, and the Vercel AI SDK.
@@ -20,7 +24,7 @@ bun install
 cp .env.example .env
 ```
 
-Edit `.env` with your OpenAI-compatible credentials (never commit this file):
+Edit `.env` with your OpenAI-compatible credentials:
 
 ```env
 OPENAI_API_KEY=
@@ -78,3 +82,21 @@ Typing in the location field queries `/api/places/autocomplete`, which proxies *
 - Tailwind CSS v4
 - `@nuxtjs/i18n`, `@nuxtjs/color-mode`
 - `ai` + `@ai-sdk/openai` + `@ai-sdk/vue` + Zod
+
+## Docker
+
+Multi-arch image (`linux/amd64`, `linux/arm64`) built from the official Bun image. Works on Linux servers, Apple Silicon, and Windows via Docker Desktop.
+
+```bash
+# Local build (current CPU)
+docker build -t what2eat .
+
+# Run (pass secrets at runtime — do not bake into the image)
+docker run --rm -p 3000:3000 \
+  -e OPENAI_API_KEY \
+  -e OPENAI_BASE_URL \
+  -e OPENAI_MODEL \
+  what2eat
+```
+
+GitHub Actions (`.github/workflows/docker.yml`) builds and pushes to `ghcr.io/<owner>/<repo>` on pushes to `main`/`master` and version tags (`v*`).

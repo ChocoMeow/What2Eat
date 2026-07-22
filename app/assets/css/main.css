@@ -91,33 +91,6 @@
   transform: translateY(12px);
 }
 
-.card-list-enter-active {
-  transition:
-    opacity 400ms var(--ease-smooth),
-    transform 400ms var(--ease-smooth);
-}
-
-.card-list-leave-active {
-  transition:
-    opacity 250ms var(--ease-smooth),
-    transform 250ms var(--ease-smooth);
-  position: absolute;
-}
-
-.card-list-enter-from {
-  opacity: 0;
-  transform: translateY(16px);
-}
-
-.card-list-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.card-list-move {
-  transition: transform 350ms var(--ease-smooth);
-}
-
 .toast-enter-active,
 .toast-leave-active {
   transition:
@@ -147,7 +120,7 @@
   padding-block: 1.5rem 0.5rem;
 }
 
-/* No size animation while idle — prevents logo thrash on instant API errors */
+/* No size animation while idle — prevents title thrash on instant API errors */
 .brand-stage--idle .brand-title,
 .brand-stage--idle .brand-block,
 .brand-stage--idle.brand-stage {
@@ -481,9 +454,6 @@
   body,
   .fade-rise-enter-active,
   .fade-rise-leave-active,
-  .card-list-enter-active,
-  .card-list-leave-active,
-  .card-list-move,
   .toast-enter-active,
   .toast-leave-active {
     transition-duration: 0.01ms !important;

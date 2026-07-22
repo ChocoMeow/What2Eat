@@ -1,9 +1,13 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import { streamObject } from 'ai'
+import { createTextStreamResponse, streamObject, type StreamObjectResult } from 'ai'
+import {
+  encodeAiSessionMeta,
+  type AiSessionMeta,
+} from '../../shared/aiMeta'
+import { buildRecommendPrompts } from '../../shared/recommendPrompts'
 import {
   createRecommendationSchema,
   recommendRequestSchema,
-  type AppLocale,
 } from '../../shared/schemas/recommendation'
 
 function withOpenRouterWebSearch(enable: boolean): typeof fetch | undefined {
@@ -18,9 +22,9 @@ function withOpenRouterWebSearch(enable: boolean): typeof fetch | undefined {
         {
           id: 'web',
           engine: 'exa',
-          max_results: 10,
+          max_results: 15,
           search_prompt:
-            'Restaurant results near the user: ratings, hours/open-now, Maps, OpenRice listings, official sites. Skip broken links.',
+            'Find dine-in restaurants near the user. Prioritize Google Maps (ratings, hours, photos, place URL), OpenRice (cover images), TripAdvisor, Yelp, Time Out, and official sites.',
         },
       ]
       return globalThis.fetch(input, { ...init, body: JSON.stringify(body) })
@@ -30,19 +34,54 @@ function withOpenRouterWebSearch(enable: boolean): typeof fetch | undefined {
   }) as typeof fetch
 }
 
-function languageRules(locale: AppLocale) {
-  if (locale === 'zh-HK') {
-    return `OUTPUT LANGUAGE: Traditional Chinese (Hong Kong) for process, cuisine, summary, description, suggestedDish, hours.
-Keep imagePrompt in English. openStatus must be open|closed|unknown.
-Translate from English web snippets into 繁體中文.`
-  }
-  return `OUTPUT LANGUAGE: English for process, cuisine, summary, description, suggestedDish, hours.
-imagePrompt in English. openStatus must be open|closed|unknown.`
+function metaStream(
+  result: StreamObjectResult<unknown, unknown, never>,
+  startedAt: number,
+  getError: () => Error | undefined,
+) {
+  return new ReadableStream<string>({
+    async start(controller) {
+      try {
+        for await (const chunk of result.textStream) {
+          const err = getError()
+          if (err) throw err
+          controller.enqueue(chunk)
+        }
+
+        const err = getError()
+        if (err) throw err
+
+        const usage = await Promise.race([
+          result.usage,
+          new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('usage timeout')), 10_000)
+          }),
+        ])
+
+        const meta: AiSessionMeta = {
+          durationMs: Date.now() - startedAt,
+          usage: {
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            totalTokens: usage.totalTokens,
+            reasoningTokens: usage.outputTokenDetails?.reasoningTokens,
+          },
+        }
+        controller.enqueue(encodeAiSessionMeta(meta))
+        controller.close()
+      } catch (error) {
+        controller.error(error instanceof Error ? error : new Error(String(error)))
+      }
+    },
+  })
 }
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
-  if (!config.openaiApiKey) {
+  const apiKey = process.env.OPENAI_API_KEY
+  const baseURL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+
+  if (!apiKey) {
     throw createError({ statusCode: 500, statusMessage: 'OPENAI_API_KEY is not configured' })
   }
 
@@ -56,38 +95,50 @@ export default defineEventHandler(async (event) => {
   }
 
   const { location, cuisines, priceTier, mode, locale } = parsed.data
-  const baseURL = config.openaiBaseUrl || 'https://api.openai.com/v1'
   const openrouter = /openrouter\.ai/i.test(baseURL)
 
   const openai = createOpenAI({
-    apiKey: config.openaiApiKey,
+    apiKey,
     baseURL,
     fetch: withOpenRouterWebSearch(openrouter),
   })
 
-  const lang = languageRules(locale)
-  const system = `You are a local food guide with live web search.
+  const { system, prompt } = buildRecommendPrompts({
+    locale,
+    location,
+    mode,
+    cuisines,
+    priceTier,
+  })
 
-${lang}
+  console.log('[what2eat:ai] request', {
+    model,
+    baseURL,
+    webSearch: openrouter,
+    body: parsed.data,
+    system,
+    prompt,
+  })
 
-Return 6–8 REAL places near the user. Prefer well-reviewed spots.
-Include rating (0–5 or null), openStatus, hours when found — never invent ratings/URLs.
-Links: only verified https mapsUrl / openRiceUrl / websiteUrl; else null.
-Emit process first, then recommendations.
-priceTier: budget | mid-range | high-end.
-Mode search: respect cuisine/price. Mode random: ignore filters, vary cuisines.
-Be specific.`
+  const startedAt = Date.now()
+  let streamError: Error | undefined
 
-  const prompt =
-    mode === 'random'
-      ? `Locale: ${locale}\nLocation: ${location}\nMode: random\nFind 6–8 highly rated places. Include ratings, open status, hours, verified links when found.\n${lang}`
-      : `Locale: ${locale}\nLocation: ${location}\nMode: search\nCuisines: ${cuisines.length ? cuisines.join(', ') : 'any'}\nPrice: ${priceTier ?? 'any'}\nFind 6–8 matching places. Include ratings, open status, hours, verified links when found.\n${lang}`
-
-  return streamObject({
-    model: openai.chat(config.openaiModel || 'gpt-4o-mini'),
+  const result = streamObject({
+    model: openai.chat(model),
     schema: createRecommendationSchema(locale),
     system,
     prompt,
     abortSignal: toWebRequest(event).signal,
-  }).toTextStreamResponse()
+    onFinish: ({ object, usage, finishReason }) => {
+      console.log('[what2eat:ai] response', { object, usage, finishReason })
+    },
+    onError: ({ error }) => {
+      streamError = error instanceof Error ? error : new Error(String(error))
+      console.error('[what2eat:ai] error', streamError)
+    },
+  })
+
+  return createTextStreamResponse({
+    stream: metaStream(result, startedAt, () => streamError),
+  })
 })

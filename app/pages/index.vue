@@ -1,125 +1,25 @@
 <script setup lang="ts">
-import { useObject } from '@ai-sdk/vue'
-import {
-  recommendationSchema,
-  type CuisineOption,
-  type PriceTier,
-} from '~~/shared/schemas/recommendation'
+const resultsEl = ref<HTMLElement | null>(null)
 
-const { t, locale } = useI18n()
-const isSearching = useState('w2e-searching', () => false)
-
-const location = ref('')
-const cuisines = ref<CuisineOption[]>([])
-const priceTier = ref<PriceTier | null>('mid-range')
-const formError = ref('')
-const requestError = ref('')
-const resultsReady = ref(false)
-const formExpanded = ref(false)
-const cancelled = ref(false)
-
-function isAbortError(err: unknown) {
-  return err instanceof Error && (err.name === 'AbortError' || /abort|cancel/i.test(err.message))
-}
-
-function failRequest() {
-  if (cancelled.value) {
-    cancelled.value = false
-    return
-  }
-  resultsReady.value = false
-  formExpanded.value = true
-  requestError.value = t('results.error')
-}
-
-const { object, submit, isLoading, error, clear, stop } = useObject({
-  api: '/api/recommend',
-  schema: recommendationSchema,
-  onError(err) {
-    if (isAbortError(err)) {
-      cancelled.value = false
-      return
-    }
-    failRequest()
-  },
-  onFinish({ object: finished, error: finishError }) {
-    if (cancelled.value || isAbortError(finishError)) {
-      cancelled.value = false
-      return
-    }
-    if (finishError || !finished?.recommendations?.length) {
-      failRequest()
-      return
-    }
-    requestError.value = ''
-    resultsReady.value = true
-    formExpanded.value = false
-  },
-})
-
-watch(isLoading, (v) => {
-  isSearching.value = !!v
-}, { immediate: true })
-
-watch(error, (err) => {
-  if (err && !cancelled.value && !isAbortError(err) && !requestError.value) failRequest()
-})
-
-onBeforeUnmount(() => {
-  if (isLoading.value) stop()
-  isSearching.value = false
-})
-
-const processText = computed(() => object.value?.process?.trim() || '')
-const recommendations = computed(
-  () => object.value?.recommendations?.filter((r) => r?.name) ?? [],
-)
-const sessionActive = computed(
-  () => !requestError.value && (resultsReady.value || !!isLoading.value),
-)
-const formMinimized = computed(
-  () =>
-    !formExpanded.value
-    && !requestError.value
-    && (!!isLoading.value || resultsReady.value),
-)
-const canCollapseForm = computed(
-  () => resultsReady.value && !isLoading.value && !requestError.value,
-)
-const bannerError = computed(() => formError.value || requestError.value)
-
-function runRecommend(mode: 'search' | 'random') {
-  if (!location.value.trim()) {
-    formError.value = t('form.locationRequired')
-    return
-  }
-  formError.value = ''
-  cancelled.value = false
-  resultsReady.value = false
-  requestError.value = ''
-  formExpanded.value = false
-  clear()
-  const code = String(locale.value || '')
-  submit({
-    location: location.value.trim(),
-    cuisines: mode === 'search' ? cuisines.value : [],
-    priceTier: mode === 'search' ? priceTier.value : null,
-    mode,
-    locale: code === 'zh-HK' || code.startsWith('zh') ? 'zh-HK' : 'en',
-  })
-}
-
-function cancelSearch() {
-  if (!isLoading.value) return
-  cancelled.value = true
-  stop()
-  clear()
-  resultsReady.value = false
-  requestError.value = ''
-  formError.value = ''
-  formExpanded.value = true
-  isSearching.value = false
-}
+const {
+  location,
+  cuisines,
+  priceTier,
+  formExpanded,
+  sessionMeta,
+  searchStartedAt,
+  isLoading,
+  processText,
+  recommendations,
+  sessionActive,
+  formMinimized,
+  canCollapseForm,
+  bannerError,
+  showInsight,
+  requestError,
+  runRecommend,
+  cancelSearch,
+} = useRecommendSearch(resultsEl)
 </script>
 
 <template>
@@ -148,33 +48,26 @@ function cancelSearch() {
       >
         <section
           id="results"
+          ref="resultsEl"
           class="results-pane relative z-0 mx-auto w-full max-w-5xl min-h-0 px-4 sm:px-6"
           :class="sessionActive ? 'results-pane--visible' : 'results-pane--hidden'"
           aria-live="polite"
         >
-          <div
-            v-if="sessionActive"
-            class="pb-14 pt-2"
-          >
+          <div v-if="sessionActive" class="pb-14 pt-2">
             <Transition name="fade-rise">
               <div
-                v-if="isLoading && !requestError"
-                class="mx-auto max-w-2xl py-5"
+                v-if="showInsight"
+                class="mx-auto mb-5 max-w-2xl py-5"
               >
                 <AiProcessNotes
                   :text="processText"
                   :fallback="$t('results.searching')"
-                  live
+                  :live="isLoading"
+                  :meta="sessionMeta"
+                  :started-at="searchStartedAt"
                 />
               </div>
             </Transition>
-
-            <div
-              v-if="resultsReady && !isLoading && processText"
-              class="mb-5"
-            >
-              <AiProcessNotes :text="processText" />
-            </div>
 
             <h2
               v-if="recommendations.length"
@@ -183,19 +76,15 @@ function cancelSearch() {
               {{ $t('results.title') }}
             </h2>
 
-            <TransitionGroup
-              name="card-list"
-              tag="div"
-              class="relative grid grid-cols-1 gap-4 sm:grid-cols-2"
-            >
+            <div class="card-grid relative grid grid-cols-1 gap-4 sm:grid-cols-2">
               <RestaurantCard
                 v-for="(item, index) in recommendations"
-                :key="`${item?.name}-${index}`"
+                :key="index"
                 :item="item || {}"
                 :location="location"
-                :index="index"
+                :settled="!isLoading"
               />
-            </TransitionGroup>
+            </div>
           </div>
         </section>
         <div
@@ -229,7 +118,7 @@ function cancelSearch() {
             v-model:cuisines="cuisines"
             v-model:price-tier="priceTier"
             :minimized="formMinimized"
-            :busy="!!isLoading"
+            :busy="isLoading && !requestError"
             :can-collapse="canCollapseForm"
             @search="runRecommend('search')"
             @random="runRecommend('random')"
