@@ -274,9 +274,19 @@ function onRandom() {
   emit('random')
 }
 
+function focusLocation() {
+  if (props.minimized || props.busy) return
+  nextTick(() => locationInputRef.value?.focus())
+}
+
 onMounted(() => {
   window.addEventListener('resize', updateDropdownPosition)
   window.addEventListener('scroll', updateDropdownPosition, true)
+  focusLocation()
+})
+
+watch(() => props.minimized, (minimized, wasMinimized) => {
+  if (wasMinimized && !minimized) focusLocation()
 })
 
 onBeforeUnmount(() => {
